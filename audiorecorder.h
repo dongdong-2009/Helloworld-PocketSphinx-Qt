@@ -41,6 +41,8 @@
 #ifndef AUDIORECORDER_H
 #define AUDIORECORDER_H
 
+#include "recorder.h"
+
 #include <QMainWindow>
 #include <QMediaRecorder>
 #include <QUrl>
@@ -61,29 +63,21 @@ class AudioRecorder : public QMainWindow
 public:
     AudioRecorder(QWidget *parent = 0);
     ~AudioRecorder();
-
-public slots:
-    void processBuffer(const QAudioBuffer&);
-
 private slots:
-    void setOutputLocation();
-    void togglePause();
-    void toggleRecord();
 
-    void updateStatus(QMediaRecorder::Status);
-    void onStateChanged(QMediaRecorder::State);
-    void updateProgress(qint64 pos);
-    void displayErrorMessage();
+    void on_recordButton_clicked();
+
+    void on_stopButton_clicked();
 
 private:
-    void clearAudioLevels();
-
     Ui::AudioRecorder *ui;
 
     QAudioRecorder *audioRecorder;
     QAudioProbe *probe;
     QList<QAudioLevel*> audioLevels;
     bool outputLocationSet;
+
+    Recorder m_recorder;
 
 };
 
