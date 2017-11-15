@@ -45,6 +45,7 @@
 
 #include <QMainWindow>
 #include <QMediaRecorder>
+#include <QSoundEffect>
 #include <QUrl>
 
 QT_BEGIN_NAMESPACE
@@ -64,10 +65,17 @@ public:
     AudioRecorder(QWidget *parent = 0);
     ~AudioRecorder();
 private slots:
+    void on_playerStatusChanged();
 
     void on_recordButton_clicked();
 
     void on_stopButton_clicked();
+
+    void on_outputButton_clicked();
+
+    void on_nextButton_clicked();
+
+    void on_playButton_clicked();
 
 private:
     Ui::AudioRecorder *ui;
@@ -78,6 +86,11 @@ private:
     bool outputLocationSet;
 
     Recorder m_recorder;
+    QSoundEffect effect;
+
+    QStringList m_sentences;
+    QStringList m_fileNames;
+    int m_indexSentences = 0;
 
 };
 

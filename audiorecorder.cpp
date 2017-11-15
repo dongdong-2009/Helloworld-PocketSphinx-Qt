@@ -43,6 +43,8 @@
 #include <QDir>
 #include <QFileDialog>
 #include <QMediaRecorder>
+#include <QTextCodec>
+#include <QMessageBox>
 
 #include "audiorecorder.h"
 
@@ -63,8 +65,6 @@ AudioRecorder::AudioRecorder(QWidget *parent) :
 
     audioRecorder = new QAudioRecorder(this);
     probe = new QAudioProbe;
-    connect(probe, SIGNAL(audioBufferProbed(QAudioBuffer)),
-            this, SLOT(processBuffer(QAudioBuffer)));
     probe->setSource(audioRecorder);
 
     //audio devices
@@ -105,6 +105,30 @@ AudioRecorder::AudioRecorder(QWidget *parent) :
     ui->bitrateBox->addItem(QStringLiteral("96000"), QVariant(96000));
     ui->bitrateBox->addItem(QStringLiteral("128000"), QVariant(128000));
     ui->bitrateBox->addItem(QStringLiteral("256000"), QVariant(256000));
+
+    //中文支持
+//    QTextCodec *codec = QTextCodec::codecForName("UTF-8");
+//    QTextCodec::setCodecForLocale(codec);
+//    QTextCodec::setCodecForCStrings(codec);
+
+//    connect(&effect,&QSoundEffect::statusChanged,this,&AudioRecorder::on_playerStatusChanged);
+
+    QFile file("./sentences.txt");
+    if(!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qDebug()<<"Can't open the file!"<<endl;
+    }
+
+    while(!file.atEnd()) {
+        QByteArray line = file.readLine();
+        QString str(line);
+        qDebug()<< str;
+        QStringList sen_pin = str.split("|");
+        QString file = sen_pin[1];
+        file.replace(QString("\n"), QString(""));
+        m_sentences.append(sen_pin[0]);
+        m_fileNames.append(file);
+    }
+    ui->labelSentence->setText(m_sentences.at(0));
 }
 
 AudioRecorder::~AudioRecorder()
@@ -113,14 +137,75 @@ AudioRecorder::~AudioRecorder()
     delete probe;
 }
 
+void AudioRecorder::on_playerStatusChanged()
+{
+//    if(effect.status() == QSoundEffect::Status) {
+//        ui->playButton->setText("Play");
+//    }
+}
+
 void AudioRecorder::on_recordButton_clicked()
 {
-    m_recorder.setFilePath("./test");
+    m_recorder.setFilePath(ui->labelPath->text()+"\\"+m_fileNames.at(m_indexSentences));
     m_recorder.startRecord();
     ui->stopButton->setEnabled(true);
+    ui->recordButton->setEnabled(false);
+    ui->nextButton->setEnabled(false);
+    ui->playButton->setText("Play");
+    effect.stop();
+    effect.setSource(QUrl::fromLocalFile(""));
+    ui->playButton->setEnabled(false);
 }
 
 void AudioRecorder::on_stopButton_clicked()
 {
     m_recorder.stopRecord();
+    ui->nextButton->setEnabled(true);
+    ui->recordButton->setEnabled(true);
+    ui->stopButton->setEnabled(false);
+    ui->playButton->setText("Play");
+    ui->playButton->setEnabled(true);
+}
+
+void AudioRecorder::on_nextButton_clicked()
+{
+    ui->labelSentence->setText(m_sentences.at(++m_indexSentences));
+    ui->playButton->setText("Play");
+    effect.stop();
+    effect.setSource(QUrl::fromLocalFile(""));
+    ui->playButton->setEnabled(false);
+    qDebug() << m_indexSentences  << m_sentences.length();
+    if (m_indexSentences == m_sentences.length()-1) {
+        QMessageBox::information(NULL,"Finished","Thank you!",QMessageBox::Ok,QMessageBox::Ok);
+        m_indexSentences = -1;
+    }
+}
+
+void AudioRecorder::on_outputButton_clicked()
+{
+    QFileDialog *fileDialog = new QFileDialog(this);
+    fileDialog->setFileMode(QFileDialog::Directory);
+    QString fileName = fileDialog->getExistingDirectory();
+    ui->labelPath->setText(fileName);
+}
+
+
+
+void AudioRecorder::on_playButton_clicked()
+{
+    if(ui->playButton->text() == "Play") {
+        effect.setSource(QUrl::fromLocalFile(ui->labelPath->text()+"\\"+m_fileNames.at(m_indexSentences)+".wav"));
+        //循环播放
+    //    effect.setLoopCount(QSoundEffect::Infinite);
+        //设置音量，0-1
+        effect.setVolume(1);
+        effect.play();
+
+        ui->playButton->setText("Stop Play");
+    }
+    else {
+        effect.stop();
+        effect.setSource(QUrl::fromLocalFile(""));
+        ui->playButton->setText("Play");
+    }
 }
